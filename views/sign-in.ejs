@@ -134,6 +134,15 @@
             background-color: rgb(56, 90, 194);
         }
 
+        .alert {
+            background-color: #eef6ff;
+            color: #1e3a8a;
+            border: 1px solid #bfdbfe;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
         @keyframes pulse {
             from {
                 transform: scale(0.9);
@@ -151,6 +160,9 @@
 <body>
     <form class="form" method="post" action="/user/login">
         <p class="title">Sign In </p>
+        <% if (alert) { %>
+            <p class="alert"><%= alert %></p>
+        <% } %>
 
         <label>
             <input required="" name="email" placeholder="" type="email" class="input">

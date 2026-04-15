@@ -8,7 +8,18 @@ const getSignUp = (req, res) => {
 };
 
 const getSignIn = (req, res) => {
-    res.render("sign-in");
+    const { signup, mail } = req.query;
+
+    let alert = "";
+    if (signup === "success" && mail === "sent") {
+        alert = "Signup successful. Welcome email sent.";
+    } else if (signup === "success" && mail === "failed") {
+        alert = "Signup successful, but welcome email failed to send.";
+    } else if (signup === "success" && mail === "config-missing") {
+        alert = "Signup successful, but email configuration is missing.";
+    }
+
+    res.render("sign-in", { alert });
 };
 
 const getDashboard = (req, res) => {
@@ -26,22 +37,30 @@ const postSignUp = (req, res) => {
 
     newCustomer
         .save()
-        .then((user) => {
+        .then(async (user) => {
             console.log("Customer saved:", user);
+            const mailUser = process.env.MAIL_USER;
+            const mailPass = process.env.MAIL_PASS;
+
+            if (!mailUser || !mailPass) {
+                console.error("MAIL_USER/MAIL_PASS is missing in environment variables.");
+                return res.redirect("/user/signin?signup=success&mail=config-missing");
+            }
+
             // Transpoter means the information about the service you are using to send the email
             let transporter = nodemailer.createTransport({
                 service: "gmail",
                 auth: {
-                    user: "",
+                    user: mailUser,
                     // a special password generated for google settings not your own password
                     // Step One: Enable 2 step verification
                     // Step Two: Generate app password
-                    pass: "",
+                    pass: mailPass,
                 },
             });
 
             let mailOptions = {
-                from: "marveladeadewuyi@gmail.com",
+                from: mailUser,
                 to: [user.email, "marvellousadewuyi72@gmail.com"],
                 subject: "Welcome to our Application",
                 html: `
@@ -62,15 +81,16 @@ const postSignUp = (req, res) => {
                 `,
             };
             // This is what will actually send the email
-            transporter.sendMail(mailOptions, function (error, info) {
-                if (error) {
-                    console.log(error);
-                } else {
-                    console.log("Email sent: " + info.response);
-                }
-            });
+            try {
+                const info = await transporter.sendMail(mailOptions);
+                console.log("Email sent: " + info.response);
+                console.log("Accepted recipients:", info.accepted);
+            } catch (error) {
+                console.error("Failed to send email:", error.message);
+                return res.redirect("/user/signin?signup=success&mail=failed");
+            }
 
-            res.redirect("/user/signin");
+            res.redirect("/user/signin?signup=success&mail=sent");
         })
         .catch((err) => {
             console.error("Error saving to DB:", err);
