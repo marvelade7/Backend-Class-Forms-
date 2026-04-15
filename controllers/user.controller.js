@@ -26,11 +26,17 @@ const getDashboard = (req, res) => {
     res.render("dashboard");
 };
 
-const postSignUp = (req, res) => {
+const postSignUp = async (req, res) => {
     let salt = bcrypt.genSaltSync(10);
     let hashedPassword = bcrypt.hashSync(req.body.password, salt);
 
     req.body.password = hashedPassword;
+
+    const existingUser = await Customer.findOne({ email: req.body.email });
+
+    if (existingUser) {
+        return res.status(400).send("User with this email already exists.");
+    }
 
     const user = req.body;
     const newCustomer = new Customer(user);
