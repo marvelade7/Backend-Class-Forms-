@@ -49,8 +49,12 @@ const postSignUp = async (req, res) => {
             const mailPass = process.env.MAIL_PASS;
 
             if (!mailUser || !mailPass) {
-                console.error("MAIL_USER/MAIL_PASS is missing in environment variables.");
-                return res.redirect("/user/signin?signup=success&mail=config-missing");
+                console.error(
+                    "MAIL_USER/MAIL_PASS is missing in environment variables.",
+                );
+                return res.redirect(
+                    "/user/signin?signup=success&mail=config-missing",
+                );
             }
 
             // Transpoter means the information about the service you are using to send the email
@@ -140,12 +144,10 @@ const getAllUsers = (req, res) => {
     Customer.find()
         .then((allUsers) => {
             console.log("All users:", allUsers);
-            res.status(200).json(
-                {
-                    message: "Registered Users",
-                    users: allUsers
-                }
-            );
+            res.status(200).json({
+                message: "Registered Users",
+                users: allUsers,
+            });
         })
         .catch((err) => {
             console.error("Error fetching users:", err);
@@ -153,4 +155,51 @@ const getAllUsers = (req, res) => {
         });
 };
 
-module.exports = { postSignUp, getSignUp, postSignIn, getSignIn, getDashboard, getAllUsers };
+const deleteUser = (req, res) => {
+    Customer.findByIdAndDelete(req.params.id)
+        .then((deletedUser) => {
+            if (!deletedUser) {
+                return res.status(404).json({
+                    message: "User not found",
+                });
+            }
+            res.status(200).json({
+                message: "User deleted successfully",
+                deletedUser,
+            });
+        })
+        .catch((error) => {
+            res.status(500).json({
+                error: error.message,
+            });
+        });
+};
+
+const updateUser = (req, res) => {
+    Customer.findByIdAndUpdate(req.params.id, req.body, { new: true })
+        .then((updatedUser) => {
+            if (!updatedUser) {
+                return res.status(404).json({
+                    message: "User not found",
+                });
+            }
+            res.status(200).json({
+                message: "User updated",
+                updatedUser,
+            });
+        })
+        .catch((error) => {
+            res.status(500).json({ error: error.message });
+        });
+};
+
+module.exports = {
+    postSignUp,
+    getSignUp,
+    postSignIn,
+    getSignIn,
+    getDashboard,
+    getAllUsers,
+    deleteUser,
+    updateUser
+};
