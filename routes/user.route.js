@@ -18,6 +18,5 @@ router.post("/login", postSignIn);
 router.get("/dashboard", getDashboard);
 router.get("/registeredUsers", getAllUsers);
 router.delete("/deleteUser/:id", deleteUser);
-router.patch("/updateUser/:id", updateUser);
 
 module.exports = router;

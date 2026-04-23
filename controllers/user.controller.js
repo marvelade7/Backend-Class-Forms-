@@ -2,10 +2,28 @@ const Customer = require("../models/user.model");
 const ejs = require("ejs");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
+const jwt = require("jsonwebtoken");
+const dotenv = require("dotenv");
+dotenv.config();
+jwtSecret = process.env.JWT_SECRET;
+
+// const cloudinary = require('cloudinary').v2;
+// cloudinary.config({
+//     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+//     api_key: process.env.CLOUDINARY_API_KEY,
+//     api_secret: process.env.CLOUDINARY_API_SECRET
+// })
+
+// const mutler = require("multer")
+// const upload = mutler({ dest: "uploads/" });
 
 const getSignUp = (req, res) => {
     res.render("sign-up");
 };
+
+// const getDashboard = (req, res) => {
+//     res.render("dashboard");
+// };
 
 const getSignIn = (req, res) => {
     const { signup, mail } = req.query;
@@ -20,10 +38,6 @@ const getSignIn = (req, res) => {
     }
 
     res.render("sign-in", { alert });
-};
-
-const getDashboard = (req, res) => {
-    res.render("dashboard");
 };
 
 const postSignUp = async (req, res) => {
@@ -131,13 +145,60 @@ const postSignIn = (req, res) => {
                     .status(400)
                     .json({ message: "Invalid email or password" });
             }
+            const token = jwt.sign({ email: req.body.email }, jwtSecret, {
+                expiresIn: "1h",
+            });
+            console.log("Generated Token:", token);
             console.log("Login successful for", foundCustomers.email);
-            res.redirect("/user/dashboard");
+            // res.redirect("/user/dashboard");
+            res.json({
+                message: "Login successful",
+                user: {
+                    id: foundCustomers._id,
+                    firstName: foundCustomers.firstName,
+                    lastName: foundCustomers.lastName,
+                    email: foundCustomers.email,
+                },
+                token: token,
+            });
         })
         .catch((err) => {
             console.error("Error during signin:", err);
             res.status(500).send("Internal server error");
         });
+};
+
+const getDashboard = (req, res) => {
+    let token = req.headers.authorization.split(" ")[1];
+
+    jwt.verify(token, jwtSecret, (err, decoded) => {
+        if (err) {
+            return res
+                .status(401)
+                .json({ message: "Invalid or expired token" });
+        } else {
+            console.log("Decoded token data:", decoded);
+            let userEmail = decoded.email;
+
+            Customer.findOne({ email: userEmail })
+                .then((user) => {
+                    if (!user) {
+                        return res
+                            .status(404)
+                            .json({ message: "User not found" });
+                    }
+                    console.log("User found:", user);
+                    res.json({
+                        message: "Dashboard accessed successfully",
+                        user: { email: user.email, firstName: user.firstName },
+                    });
+                })
+                .catch((err) => {
+                    console.error("Error fetching user:", err);
+                    res.status(500).json({ message: "Internal server error" });
+                });
+        }
+    });
 };
 
 const getAllUsers = (req, res) => {
@@ -193,13 +254,16 @@ const updateUser = (req, res) => {
         });
 };
 
+const upload = (req, res) => {};
+
 module.exports = {
     postSignUp,
     getSignUp,
     postSignIn,
     getSignIn,
-    getDashboard,
+    // getDashboard,
     getAllUsers,
     deleteUser,
-    updateUser
+    updateUser,
+    getDashboard,
 };
