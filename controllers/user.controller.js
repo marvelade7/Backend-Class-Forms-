@@ -158,8 +158,9 @@ const postSignIn = (req, res) => {
                     firstName: foundCustomers.firstName,
                     lastName: foundCustomers.lastName,
                     email: foundCustomers.email,
+                    token,
                 },
-                token: token,
+                
             });
         })
         .catch((err) => {
